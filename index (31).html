@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Language" content="es">
+<title>ISL - Gestor de Izaje y Certificaciones</title>
+</head>
+<body class="notranslate" translate="no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3864; --navy-dark:#152747; --steel:#2E5395;
+    --ink:#1A1D23; --sub:#5B6472; --paper:#F1F2F5; --card:#FFFFFF;
+    --ok:#3F7D4C; --ok-bg:#E4F1E6;
+    --warn:#B9720F; --warn-bg:#FBEDD8;
+    --danger:#B23A2E; --danger-bg:#FBE4E1;
+    --line:#DCE0E6; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .app{display:flex;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{width:236px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+  .brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.12);}
+  .brand .tag{
+    display:inline-block;background:var(--navy-dark);border:1px solid rgba(255,255,255,.35);
+    border-radius:4px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:.08em;color:#B9C6DE;margin-bottom:10px;
+  }
+  .brand h1{font-family:'Oswald',sans-serif;font-size:19px;line-height:1.2;margin:0;text-transform:uppercase;letter-spacing:.02em;}
+  .brand p{margin:4px 0 0;font-size:11px;color:#9FB0CB;}
+  nav{padding:14px 10px;flex:1;}
+  nav button{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+    color:#C7D2E5;padding:10px 12px;border-radius:8px;font-size:13.5px;cursor:pointer;margin-bottom:2px;
+    font-family:'Inter',sans-serif;font-weight:500;
+  }
+  nav button:hover{background:rgba(255,255,255,.06);color:#fff;}
+  nav button.active{background:#fff;color:var(--navy);font-weight:600;}
+  nav .ico{width:18px;text-align:center;font-size:14px;}
+  .sidebar-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.12);font-size:10.5px;color:#7F91B0;font-family:'IBM Plex Mono',monospace;}
+
+  /* Main */
+  main{flex:1;padding:28px 34px;max-width:1300px;}
+  .pagehead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;}
+  .pagehead h2{font-family:'Oswald',sans-serif;font-size:24px;margin:0;text-transform:uppercase;letter-spacing:.01em;color:var(--navy);}
+  .pagehead p{margin:4px 0 0;color:var(--sub);font-size:13px;}
+  .btn{
+    background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;
+    font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .btn:hover{background:var(--navy-dark);}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--ink);}
+  .btn.small{padding:6px 10px;font-size:12px;border-radius:6px;}
+  .btn.danger-txt{color:var(--danger);}
+
+  /* Tag badge - inspection-tag style, the signature element */
+  .tag-badge{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:3px;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.03em;
+    text-transform:uppercase;border:1px dashed currentColor;position:relative;
+  }
+  .tag-badge .hole{width:6px;height:6px;border-radius:50%;background:var(--paper);border:1px solid currentColor;flex-shrink:0;}
+  .tag-badge.ok{color:var(--ok);background:var(--ok-bg);}
+  .tag-badge.warn{color:var(--warn);background:var(--warn-bg);}
+  .tag-badge.danger{color:var(--danger);background:var(--danger-bg);}
+
+  /* Dashboard cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+  .cat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .cat-card h3{font-family:'Oswald',sans-serif;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--sub);margin:0 0 12px;}
+  .stat-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-top:1px solid var(--paper);}
+  .stat-row:first-of-type{border-top:none;}
+  .stat-row b{font-family:'IBM Plex Mono',monospace;font-size:14px;}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:22px;}
+  .panel h3{font-family:'Oswald',sans-serif;font-size:15px;text-transform:uppercase;color:var(--navy);margin:0 0 14px;letter-spacing:.02em;}
+  .empty{color:var(--sub);font-size:13px;padding:16px 0;text-align:center;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--sub);border-bottom:2px solid var(--line);padding:8px 10px;white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--paper);vertical-align:middle;}
+  tr:hover td{background:#FAFBFC;}
+  td.idcol{font-family:'IBM Plex Mono',monospace;color:var(--steel);font-weight:600;}
+  .rowactions{display:flex;gap:6px;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .toolbar input[type=text]{
+    border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:13px;width:220px;font-family:'Inter',sans-serif;
+  }
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:12px;width:520px;max-width:92vw;max-height:88vh;overflow:auto;padding:24px 26px;}
+  .modal h3{font-family:'Oswald',sans-serif;text-transform:uppercase;color:var(--navy);margin:0 0 16px;font-size:17px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--sub);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em;}
+  .field input,.field select{
+    width:100%;border:1px solid var(--line);border-radius:7px;padding:9px 10px;font-size:13.5px;font-family:'Inter',sans-serif;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+
+  .loading{padding:60px;text-align:center;color:var(--sub);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .badge-count{background:var(--danger);color:#fff;border-radius:20px;font-size:10px;padding:1px 6px;margin-left:auto;font-family:'IBM Plex Mono',monospace;}
+  nav button{justify-content:space-between;}
+  nav button > span.left{display:flex;align-items:center;gap:10px;}
+</style>
+
+<div id="root" class="loading">Cargando datos...</div>
+
+<script>
+const SCHEMAS = {
+  obras: {
+    label: "Obras", singular: "Obra",
+    fields: [
+      {k:"id", l:"Código", type:"text", ph:"OB-0001", required:true},
+      {k:"nombre_obra", l:"Nombre de la obra", type:"text", required:true},
+      {k:"cliente", l:"Cliente", type:"text"},
+      {k:"oc_cliente", l:"OC del cliente", type:"text"},
+    ],
+    cols:["id","nombre_obra","cliente","oc_cliente"]
+  },
+  elementos: {
+    label: "Elementos de Izaje", singular: "Elemento",
+    fields: [
+      {k:"id", l:"Código", type:"text", ph:"EL-0001", required:true},
+      {k:"tipo", l:"Tipo", type:"select", opts:["Eslinga","Grillete","Cadena","Cáncamo","Estrobo","Aparejo","Tecle","Otro"], required:true},
+      {k:"descripcion", l:"Descripción", type:"text"},
+      {k:"capacidad", l:"Capacidad (TN)", type:"number"},
+      {k:"marca", l:"Marca", type:"text"},
+      {k:"modelo", l:"Modelo", type:"text"},
+      {k:"sin_datos_compra", l:"Elemento ya existente en stock (sin datos de compra)", type:"checkbox"},
+      {k:"fecha_compra", l:"Fecha de compra", type:"date"},
+      {k:"proveedor", l:"Proveedor", type:"text"},
+      {k:"n_certificado", l:"N° certificado vigente", type:"text"},
+      {k:"ente_certificador", l:"Ente certificador", type:"text"},
+      {k:"frecuencia_meses", l:"Frecuencia (meses)", type:"number", required:true},
+      {k:"fecha_ultima_habilitacion", l:"Última habilitación", type:"date", required:true},
+      {k:"ubicacion", l:"Ubicación actual (obra)", type:"obraselect"},
+    ],
+    dateField:"fecha_ultima_habilitacion", freqField:"frecuencia_meses",
+    cols:["id","tipo","descripcion","marca_modelo","fecha_ultima_habilitacion","fecha_vencimiento","estado","ubicacion"]
+  },
+  compras: {
+    label: "Compras", singular: "Compra",
+    fields: [
+      {k:"id", l:"N° de compra", type:"text", ph:"C-0001", required:true},
+      {k:"fecha", l:"Fecha", type:"date", required:true},
+      {k:"elemento_id", l:"Código de elemento", type:"text", required:true},
+      {k:"proveedor", l:"Proveedor", type:"text"},
+      {k:"n_factura", l:"N° factura / OC", type:"text"},
+      {k:"valor_usd", l:"Valor (USD)", type:"number"},
+      {k:"tipo_cambio_vendedor", l:"Tipo de cambio BNA vendedor", type:"bnarate"},
+      {k:"monto", l:"Monto (ARS)", type:"number"},
+      {k:"vencimiento_inicial", l:"Vencimiento certificado origen", type:"date"},
+    ],
+    cols:["id","fecha","elemento_id","proveedor","n_factura","valor_usd","monto","vencimiento_inicial"]
+  },
+  certificaciones: {
+    label: "Certificaciones", singular: "Recertificación",
+    fields: [
+      {k:"id", l:"ID", type:"text", ph:"CE-0001", required:true},
+      {k:"elemento_id", l:"Código de elemento", type:"text", required:true},
+      {k:"fecha_habilitacion", l:"Fecha de habilitación", type:"date", required:true},
+      {k:"frecuencia_meses", l:"Frecuencia aplicada (meses)", type:"number", required:true},
+      {k:"empresa_certificadora", l:"Empresa certificadora", type:"text"},
+      {k:"n_certificado", l:"N° certificado", type:"text"},
+      {k:"costo", l:"Costo (ARS)", type:"number"},
+    ],
+    dateField:"fecha_habilitacion", freqField:"frecuencia_meses",
+    cols:["id","elemento_id","fecha_habilitacion","fecha_vencimiento","empresa_certificadora","n_certificado","costo"]
+  },
+  choferes: {
+    label: "Choferes / Operadores", singular: "Chofer / Operador",
+    fields: [
+      {k:"id", l:"ID", type:"text", ph:"CH-0001", required:true},
+      {k:"nombre", l:"Nombre", type:"text", required:true},
+      {k:"dni", l:"DNI", type:"text"},
+      {k:"tipo_carnet", l:"Tipo de carnet", type:"select", opts:["Grúa","Autoelevador","Otro"]},
+      {k:"fecha_emision", l:"Fecha de emisión", type:"date"},
+      {k:"fecha_vencimiento", l:"Fecha de vencimiento", type:"date", required:true},
+      {k:"entidad_emisora", l:"Entidad emisora", type:"text"},
+    ],
+    vencField:"fecha_vencimiento",
+    cols:["id","nombre","dni","tipo_carnet","fecha_vencimiento","estado","entidad_emisora"]
+  },
+  equipos: {
+    label: "Equipos de Izaje", singular: "Equipo",
+    fields: [
+      {k:"id", l:"ID", type:"text", ph:"EQ-0001", required:true},
+      {k:"tipo", l:"Tipo", type:"select", opts:["Grúa","Autoelevador","Aparejo","Tecle Eléctrico","Otro"]},
+      {k:"marca_modelo", l:"Marca / Modelo", type:"text"},
+      {k:"patente", l:"Patente / N° serie", type:"text"},
+      {k:"fecha_ultima_habilitacion", l:"Última habilitación", type:"date"},
+      {k:"fecha_vencimiento", l:"Fecha de vencimiento", type:"date", required:true},
+      {k:"empresa_certificadora", l:"Empresa certificadora", type:"text"},
+    ],
+    vencField:"fecha_vencimiento",
+    cols:["id","tipo","marca_modelo","patente","fecha_vencimiento","estado","empresa_certificadora"]
+  }
+};
+
+const ALERT_DAYS = 30;
+let DB = { obras:[], elementos:[], compras:[], certificaciones:[], choferes:[], equipos:[] };
+let currentTab = "dashboard";
+let editingCtx = null; // {table, id}
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function addMonths(dateStr, months){
+  if(!dateStr || !months) return null;
+  const d = new Date(dateStr+"T00:00:00");
+  d.setMonth(d.getMonth()+Number(months));
+  return d.toISOString().slice(0,10);
+}
+
+function computeVencimiento(table, row){
+  const s = SCHEMAS[table];
+  if(s.vencField) return row[s.vencField] || null;
+  if(s.dateField && s.freqField) return addMonths(row[s.dateField], row[s.freqField]);
+  return null;
+}
+
+function computeEstado(vencISO){
+  if(!vencISO) return {label:"Sin dato", cls:"warn"};
+  const today = new Date(todayISO()+"T00:00:00");
+  const venc = new Date(vencISO+"T00:00:00");
+  const diffDays = Math.round((venc-today)/86400000);
+  if(diffDays < 0) return {label:"Vencido", cls:"danger"};
+  if(diffDays <= ALERT_DAYS) return {label:"Por vencer", cls:"warn"};
+  return {label:"Vigente", cls:"ok"};
+}
+
+function fmtDate(s){
+  if(!s) return "—";
+  const [y,m,d] = s.split("-");
+  return d && m && y ? `${d}/${m}/${y}` : s;
+}
+function fmtMoney(n){
+  if(n===undefined||n===null||n==="") return "—";
+  return "$ " + Number(n).toLocaleString("es-AR");
+}
+
+async function fetchBnaVenta(){
+  try{
+    const res = await fetch("https://dolar-bna.vercel.app/api/cotizacion");
+    if(!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    if(!data || !data.venta) throw new Error("sin dato venta");
+    return { venta: data.venta, compra: data.compra, fecha: data.timestamp };
+  }catch(e){
+    return null;
+  }
+}
+
+// ---------- Google Sheets — vía Apps Script (proxy) ----------
+// Pegá acá la URL de implementación del Apps Script (Paso "Implementar -> Aplicación web").
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9WANpGZ5hPCPvu2il2_-ghX6h-sgpO4myG0cVIqIz4_Mn_A8h9Z_5fGa1AtlbwNE1xw/exec";
+
+const SHEET_NAMES = {
+  obras: "Obras", elementos: "Elementos_Izaje", compras: "Compras",
+  certificaciones: "Certificaciones_Elementos", choferes: "Choferes_Operadores", equipos: "Equipos_Izaje"
+};
+
+async function scriptGet(sheetName){
+  const res = await fetch(`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheetName)}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data.values || [];
+}
+async function scriptPost(sheetName, rows){
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: {"Content-Type": "text/plain;charset=utf-8"}, // evita preflight CORS con Apps Script
+    body: JSON.stringify({ sheet: sheetName, rows })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
+}
+
+// ---------- Storage (backed by Google Sheets vía Apps Script) ----------
+async function loadAll(){
+  for(const table of Object.keys(SCHEMAS)){
+    const sheetName = SHEET_NAMES[table];
+    const rows = await scriptGet(sheetName);
+    if(rows.length < 2){ DB[table] = []; continue; }
+    const headers = rows[0];
+    DB[table] = rows.slice(1)
+      .filter(r=>r.some(c=>c!==undefined && c!==""))
+      .map(r=>{
+        const obj = {};
+        headers.forEach((h,i)=>{
+          let v = r[i]!==undefined ? r[i] : "";
+          const fdef = (SCHEMAS[table].fields||[]).find(f=>f.k===h);
+          if(fdef && fdef.type==="checkbox") v = (v===true || v==="TRUE" || v==="true");
+          else if(fdef && fdef.type==="number" && v!=="") v = Number(v);
+          obj[h] = v;
+        });
+        return obj;
+      });
+  }
+}
+async function saveTable(table){
+  const sheetName = SHEET_NAMES[table];
+  const headers = SCHEMAS[table].fields.map(f=>f.k);
+  const rows = DB[table].map(r => headers.map(h=>{
+    const v = r[h];
+    if(v===undefined || v===null) return "";
+    if(typeof v==="boolean") return v ? "TRUE" : "FALSE";
+    return v;
+  }));
+  await scriptPost(sheetName, rows);
+}
+
+// ---------- Render shell ----------
+function render(){
+  const root = document.getElementById("root");
+  root.className = "";
+  root.innerHTML = `
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="tag">ISL · INTERNO</span>
+          <h1>Gestor de Izaje &amp; Certificaciones</h1>
+          <p>Instrumental San Lorenzo S.R.L.</p>
+        </div>
+        <nav id="nav"></nav>
+        <div class="sidebar-foot">UMBRAL DE ALERTA: ${ALERT_DAYS} DÍAS</div>
+      </aside>
+      <main id="main"></main>
+    </div>
+    <div class="overlay" id="overlay"><div class="modal" id="modalBody"></div></div>
+  `;
+  renderNav();
+  renderTab();
+}
+
+const NAV_ITEMS = [
+  {k:"dashboard", l:"Panel de alertas", ico:"◆"},
+  {k:"obras", l:"Obras", ico:"⌂"},
+  {k:"elementos", l:"Elementos de izaje", ico:"▤"},
+  {k:"compras", l:"Compras", ico:"$"},
+  {k:"certificaciones", l:"Certificaciones", ico:"✓"},
+  {k:"choferes", l:"Choferes / operadores", ico:"☺"},
+  {k:"equipos", l:"Equipos de izaje", ico:"▦"},
+];
+
+function renderNav(){
+  const nav = document.getElementById("nav");
+  nav.innerHTML = NAV_ITEMS.map(item=>{
+    const count = alertCountFor(item.k);
+    return `<button class="${currentTab===item.k?'active':''}" data-tab="${item.k}">
+      <span class="left"><span class="ico">${item.ico}</span>${item.l}</span>
+      ${count>0?`<span class="badge-count">${count}</span>`:""}
+    </button>`;
+  }).join("");
+  nav.querySelectorAll("button").forEach(b=>b.onclick=()=>{ currentTab=b.dataset.tab; render(); });
+}
+
+const ALERT_TABLES = ["elementos","choferes","equipos"];
+
+function alertCountFor(tab){
+  if(tab==="dashboard"){
+    return ALERT_TABLES.reduce((sum,t)=>sum+countProblem(t),0);
+  }
+  if(!ALERT_TABLES.includes(tab)) return 0;
+  return countProblem(tab);
+}
+function countProblem(table){
+  return (DB[table]||[]).filter(r=>{
+    const venc = computeVencimiento(table, r);
+    const e = computeEstado(venc);
+    return e.cls!=="ok";
+  }).length;
+}
+
+function renderTab(){
+  const main = document.getElementById("main");
+  if(currentTab==="dashboard") return renderDashboard(main);
+  renderTable(main, currentTab);
+}
+
+// ---------- Dashboard ----------
+function renderDashboard(main){
+  const cats = [
+    {key:"elementos", label:"Elementos de Izaje"},
+    {key:"choferes", label:"Choferes / Operadores"},
+    {key:"equipos", label:"Equipos de Izaje"},
+  ];
+  const cards = cats.map(c=>{
+    const rows = DB[c.key]||[];
+    let ok=0,warn=0,danger=0;
+    rows.forEach(r=>{
+      const e = computeEstado(computeVencimiento(c.key,r));
+      if(e.cls==="ok") ok++; else if(e.cls==="warn") warn++; else if(e.cls==="danger") danger++;
+    });
+    return `<div class="cat-card">
+      <h3>${c.label}</h3>
+      <div class="stat-row"><span>Vigentes</span><b style="color:var(--ok)">${ok}</b></div>
+      <div class="stat-row"><span>Por vencer</span><b style="color:var(--warn)">${warn}</b></div>
+      <div class="stat-row"><span>Vencidos</span><b style="color:var(--danger)">${danger}</b></div>
+      <div class="stat-row"><span>Total registrados</span><b>${rows.length}</b></div>
+    </div>`;
+  }).join("");
+
+  // Consolidated upcoming/expired list
+  let alerts = [];
+  cats.forEach(c=>{
+    (DB[c.key]||[]).forEach(r=>{
+      const venc = computeVencimiento(c.key,r);
+      const e = computeEstado(venc);
+      if(e.cls!=="ok"){
+        alerts.push({cat:c.label, id:r.id, nombre: r.nombre || r.descripcion || r.marca_modelo || r.tipo || "", venc, estado:e});
+      }
+    });
+  });
+  alerts.sort((a,b)=> (a.venc||"9999") < (b.venc||"9999") ? -1:1);
+
+  main.innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h2>Panel de alertas</h2>
+        <p>Estado consolidado — activos propios de ISL</p>
+      </div>
+    </div>
+    <div class="cards">${cards}</div>
+    <div class="panel">
+      <h3>Vencidos y por vencer</h3>
+      ${alerts.length===0 ? `<div class="empty">No hay elementos, choferes ni equipos por vencer o vencidos.</div>` : `
+      <table>
+        <thead><tr><th>Categoría</th><th>ID</th><th>Descripción</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${alerts.map(a=>`
+            <tr>
+              <td>${a.cat}</td>
+              <td class="idcol">${a.id}</td>
+              <td>${a.nombre||"—"}</td>
+              <td class="mono">${fmtDate(a.venc)}</td>
+              <td>${tagBadge(a.estado)}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`}
+    </div>
+  `;
+}
+
+function tagBadge(estado){
+  return `<span class="tag-badge ${estado.cls}"><span class="hole"></span>${estado.label}</span>`;
+}
+
+// ---------- Generic table view ----------
+function renderTable(main, table){
+  const s = SCHEMAS[table];
+  const rows = [...(DB[table]||[])];
+
+  main.innerHTML = `
+    <div class="pagehead">
+      <div>
+        <h2>${s.label}</h2>
+        <p>${rows.length} registro${rows.length===1?"":"s"}</p>
+      </div>
+      <button class="btn" id="addBtn">+ Agregar ${s.singular}</button>
+    </div>
+    <div class="panel">
+      ${rows.length===0 ? `<div class="empty">Todavía no hay registros. Usá "Agregar ${s.singular}" para cargar el primero.</div>` : `
+      <table>
+        <thead><tr>${s.cols.map(c=>`<th>${colLabel(s,c)}</th>`).join("")}<th></th></tr></thead>
+        <tbody>
+          ${rows.map(r=>renderRow(table,s,r)).join("")}
+        </tbody>
+      </table>`}
+    </div>
+  `;
+  document.getElementById("addBtn").onclick = ()=> openModal(table, null);
+  main.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openModal(table, b.dataset.edit));
+  main.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteRow(table, b.dataset.del));
+}
+
+function colLabel(s,c){
+  if(c==="estado") return "Estado";
+  if(c==="fecha_vencimiento") return "Vencimiento";
+  if(c==="marca_modelo") return "Marca / Modelo";
+  const f = s.fields.find(f=>f.k===c);
+  return f ? f.l : c;
+}
+
+function renderRow(table, s, r){
+  const venc = computeVencimiento(table, r);
+  const estado = computeEstado(venc);
+  const cells = s.cols.map(c=>{
+    if(c==="estado") return `<td>${tagBadge(estado)}</td>`;
+    if(c==="fecha_vencimiento") return `<td class="mono">${fmtDate(venc)}</td>`;
+    if(c==="marca_modelo") return `<td>${r.marca_modelo || [r.marca,r.modelo].filter(Boolean).join(" / ") || "—"}</td>`;
+    if(c==="ubicacion") return `<td>${obraLabel(r.ubicacion)}</td>`;
+    if(c==="monto" || c==="costo") return `<td class="mono">${fmtMoney(r[c])}</td>`;
+    if(c==="valor_usd") return `<td class="mono">${r.valor_usd? "US$ "+Number(r.valor_usd).toLocaleString("es-AR") : "—"}</td>`;
+    if(c && c.startsWith("fecha")) return `<td class="mono">${fmtDate(r[c])}</td>`;
+    if(c==="id") return `<td class="idcol">${r.id}</td>`;
+    return `<td>${r[c]!==undefined && r[c]!=="" ? r[c] : "—"}</td>`;
+  }).join("");
+  return `<tr>${cells}<td class="rowactions">
+      <button class="btn ghost small" data-edit="${r.id}">Editar</button>
+      <button class="btn ghost small danger-txt" data-del="${r.id}">Eliminar</button>
+    </td></tr>`;
+}
+
+async function deleteRow(table, id){
+  if(!confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
+  DB[table] = DB[table].filter(r=>r.id!==id);
+  await saveTable(table);
+  renderTab(); renderNav();
+}
+
+// ---------- Modal / Form ----------
+function openModal(table, id){
+  editingCtx = {table, id};
+  const s = SCHEMAS[table];
+  const existing = id ? DB[table].find(r=>r.id===id) : null;
+  const overlay = document.getElementById("overlay");
+  const body = document.getElementById("modalBody");
+
+  body.innerHTML = `
+    <h3>${existing? "Editar" : "Agregar"} ${s.singular}</h3>
+    <form id="entryForm">
+      <div class="grid2">
+        ${s.fields.map(f=>renderField(f, existing, id)).join("")}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelBtn">Cancelar</button>
+        <button type="submit" class="btn">Guardar</button>
+      </div>
+    </form>
+  `;
+  overlay.classList.add("show");
+  document.getElementById("cancelBtn").onclick = closeModal;
+  document.getElementById("entryForm").onsubmit = (e)=>{ e.preventDefault(); submitForm(); };
+
+  // Toggle compra fields when "elemento existente" is checked
+  const chk = document.querySelector('#entryForm input[name="sin_datos_compra"]');
+  if(chk){
+    const toggle = ()=>{
+      const fc = document.getElementById("field-fecha_compra");
+      const pv = document.getElementById("field-proveedor");
+      if(fc) fc.style.display = chk.checked ? "none" : "block";
+      if(pv) pv.style.display = chk.checked ? "none" : "block";
+    };
+    chk.onchange = toggle;
+    toggle();
+  }
+
+  // BNA rate lookup for Compras
+  const bnaBtn = document.getElementById("bnaBtn");
+  if(bnaBtn){
+    const form = document.getElementById("entryForm");
+    const recomputeMonto = ()=>{
+      const usd = parseFloat(form.elements["valor_usd"].value);
+      const tc = parseFloat(form.elements["tipo_cambio_vendedor"].value);
+      if(!isNaN(usd) && !isNaN(tc) && usd>0 && tc>0){
+        form.elements["monto"].value = Math.round(usd*tc);
+      }
+    };
+    form.elements["valor_usd"].oninput = recomputeMonto;
+    form.elements["tipo_cambio_vendedor"].oninput = recomputeMonto;
+    bnaBtn.onclick = async ()=>{
+      bnaBtn.disabled = true; bnaBtn.textContent = "Consultando...";
+      const status = document.getElementById("bnaStatus");
+      const rate = await fetchBnaVenta();
+      if(rate){
+        form.elements["tipo_cambio_vendedor"].value = rate.venta;
+        recomputeMonto();
+        const fechaTxt = rate.fecha ? new Date(rate.fecha).toLocaleString("es-AR") : "";
+        status.textContent = `BNA divisa vendedor: $${rate.venta} ${fechaTxt?("· "+fechaTxt):""}`;
+        status.style.color = "var(--ok)";
+      } else {
+        status.textContent = "No se pudo consultar la cotización. Ingresá el valor manualmente.";
+        status.style.color = "var(--danger)";
+      }
+      bnaBtn.disabled = false; bnaBtn.textContent = "Traer cotización BNA";
+    };
+  }
+}
+
+function obraOptions(selectedVal){
+  const opts = [`<option value="">—</option>`, `<option value="DEPOSITO" ${selectedVal==="DEPOSITO"?"selected":""}>Depósito ISL</option>`];
+  (DB.obras||[]).forEach(o=>{
+    opts.push(`<option value="${o.id}" ${selectedVal===o.id?"selected":""}>${o.nombre_obra} (${o.id})</option>`);
+  });
+  return opts.join("");
+}
+
+function obraLabel(id){
+  if(!id) return "—";
+  if(id==="DEPOSITO") return "Depósito ISL";
+  const o = (DB.obras||[]).find(x=>x.id===id);
+  return o ? `${o.nombre_obra}${o.oc_cliente? " · OC "+o.oc_cliente : ""}` : id;
+}
+
+// Prefijo del código automático por módulo
+const ID_PREFIX = {
+  obras:"OB", elementos:"EL", compras:"C", certificaciones:"CE", choferes:"CH", equipos:"EQ"
+};
+
+// Próximo código libre: mayor número existente con ese prefijo + 1.
+// Respeta el ancho de los códigos ya cargados (ej. EL-001 → EL-005).
+function nextId(table){
+  const prefix = ID_PREFIX[table];
+  const re = new RegExp("^"+prefix+"-(\\d+)$");
+  let max = 0, width = 3;
+  (DB[table]||[]).forEach(r=>{
+    const m = String(r.id||"").match(re);
+    if(m){ max = Math.max(max, parseInt(m[1],10)); width = Math.max(width, m[1].length); }
+  });
+  return prefix + "-" + String(max+1).padStart(width,"0");
+}
+
+function renderField(f, existing, editingId){
+  let val = existing ? (existing[f.k] ?? "") : "";
+  // El código se genera solo: no se tipea ni al agregar ni al editar
+  if(f.k==="id" && !existing && editingCtx) val = nextId(editingCtx.table);
+  const disabled = (f.k==="id") ? "disabled" : "";
+
+  if(f.type==="checkbox"){
+    return `<div class="field" id="field-${f.k}" style="grid-column:1/-1;">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:13px;color:var(--ink);">
+        <input type="checkbox" name="${f.k}" ${val?"checked":""} style="width:auto;"/> ${f.l}
+      </label>
+    </div>`;
+  }
+  if(f.type==="obraselect"){
+    return `<div class="field" id="field-${f.k}"><label>${f.l}</label>
+      <select name="${f.k}">${obraOptions(val)}</select>
+    </div>`;
+  }
+  if(f.type==="bnarate"){
+    return `<div class="field" id="field-${f.k}" style="grid-column:1/-1;">
+      <label>${f.l}</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" name="${f.k}" value="${val}" step="0.01" style="flex:1;"/>
+        <button type="button" class="btn ghost small" id="bnaBtn" style="white-space:nowrap;">Traer cotización BNA</button>
+      </div>
+      <div id="bnaStatus" style="font-size:11px;color:var(--sub);margin-top:5px;font-family:'IBM Plex Mono',monospace;"></div>
+    </div>`;
+  }
+
+  let input;
+  if(f.type==="select"){
+    input = `<select name="${f.k}" ${f.required?"required":""} ${disabled}>
+      <option value="">—</option>
+      ${f.opts.map(o=>`<option value="${o}" ${val===o?"selected":""}>${o}</option>`).join("")}
+    </select>`;
+  } else {
+    input = `<input type="${f.type}" name="${f.k}" value="${val}" placeholder="${f.ph||""}" ${f.required?"required":""} ${disabled}/>`;
+  }
+  const autoTag = f.k==="id" ? " (automático)" : "";
+  return `<div class="field" id="field-${f.k}"><label>${f.l}${autoTag}${f.required && f.k!=="id"?" *":""}</label>${input}</div>`;
+}
+
+function closeModal(){
+  document.getElementById("overlay").classList.remove("show");
+  editingCtx = null;
+}
+
+async function submitForm(){
+  const {table, id} = editingCtx;
+  const s = SCHEMAS[table];
+  const form = document.getElementById("entryForm");
+  const data = {};
+  s.fields.forEach(f=>{
+    const el = form.elements[f.k];
+    let v;
+    if(f.type==="checkbox"){
+      v = el.checked;
+    } else {
+      v = el.value;
+      if(f.type==="number" && v!=="") v = Number(v);
+    }
+    data[f.k] = v;
+  });
+  if(!data.id){ alert("El código / ID es obligatorio."); return; }
+
+  if(id){
+    const idx = DB[table].findIndex(r=>r.id===id);
+    DB[table][idx] = {...DB[table][idx], ...data};
+  } else {
+    if(DB[table].some(r=>r.id===data.id)){ alert("Ya existe un registro con ese ID."); return; }
+    DB[table].push(data);
+  }
+  await saveTable(table);
+  closeModal();
+  renderTab();
+  renderNav();
+}
+
+// ---------- Init ----------
+async function init(){
+  const root = document.getElementById("root");
+  root.className = "loading";
+  root.innerHTML = "Conectando con Google Sheets...";
+  try{
+    await loadAll();
+    render();
+  }catch(e){
+    root.innerHTML = `
+      <div style="max-width:520px;margin:80px auto;text-align:center;font-family:'Inter',sans-serif;">
+        <div style="font-family:'Oswald',sans-serif;font-size:20px;color:#B23A2E;text-transform:uppercase;margin-bottom:10px;">
+          No se pudo conectar con la Sheet
+        </div>
+        <div style="font-size:13px;color:#5B6472;margin-bottom:18px;white-space:pre-wrap;">${e.message}</div>
+        <div style="font-size:12px;color:#5B6472;margin-bottom:18px;">
+          Verificá que:<br/>
+          1) Reemplazaste <b style="font-family:'IBM Plex Mono',monospace;">APPS_SCRIPT_URL</b> por la URL real de tu implementación.<br/>
+          2) El Apps Script está implementado como Aplicación web con acceso "Cualquier usuario".<br/>
+          3) Las 6 pestañas existen en la Sheet con esos nombres exactos.
+        </div>
+        <button class="btn" onclick="init()">Reintentar</button>
+      </div>`;
+  }
+}
+init();
+</script>
+</body>
+</html>
